@@ -29,7 +29,7 @@ class Bateau:
 		return self.__orientation
 	def getTaille(self):
 		return self.__taille
-	def estplace(self):
+	def getEstPlace(self):
 		return self.__place
 
 	# Setters

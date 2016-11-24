@@ -16,21 +16,21 @@ class BatailleNavale:
 			return self.__joueurs[index]
 
 	# SETTERS
-	def setJoueur(self,index, new):
-		self.__joueurs[index] = new
 	def setJoueurs(self,new):
 		self.__joueurs = new
+	def setJoueur(self,index, new):
+		self.__joueurs[index] = new
 
 	def commencerJeu(self):
 		""" Routine principale du jeu """
 
-		os.system("color  F0")
+		#os.system("color  F0") # met la console en noir sur fond blanc
 		# On instancie les joueurs ici pour pouvoir en changer en cas de nouvelle partie
-		self.setJoueurs([Joueurs(self.demanderNom()),
-						 Joueurs(self.demanderNom('2'))])
+		self.setJoueurs([Joueurs(),
+						 Joueurs()])
 
 		# tant qu'il n'y a pas de vainceurs, on joue
-		while self.getJoueur(0).estVainceur() == False and self.getJoueur(1).estVainceur() == False:
+		while not self.getJoueur(0).estVainceur() and not self.getJoueur(1).estVainceur():
 			self.afficheJeu()
 			self.tirer()
 
@@ -80,8 +80,9 @@ class BatailleNavale:
 		# si le joueur entre 42, il gagne, pour tester l'écrant de fin.
 		if coords == 42:
 			return True
+
 		# cible contient la lettre de la case visé
-		cible = self.getJoueur(0).getPlateau().getCase(coords[0], coords[1])
+		cible = self.getJoueur(1).getPlateau().getCase(coords[0], coords[1])
 		# case correspond à l'index de cible dans casPossible, plus facile à manipuler (int)
 		case = self.casePossible.index(cible)
 
@@ -97,7 +98,8 @@ class BatailleNavale:
 				self.getJoueur(1).getPlateau().setCase(coords[0], coords[1], 't')
 
 				# on décrémente une vie au bateau ce qui entraine de le couler s'il n'en a plus
-				self.getJoueur(1).getBateau(case-1).decrementerVie()
+				self.getJoueur(1).getBateau(case - 1).decrementerVie()
+
 				self.changerTour(coords, case)
 
 	def changerTour(self, coor, cible):
@@ -109,30 +111,30 @@ class BatailleNavale:
 					'Sous-marin touche',				# la case ciblé était 'S'
 					'Torpilleur touche',				# la case ciblé était 'T'
 					None, None, None]					# la case ciblé était 'w', 't' ou 'c' ce qui n'est pas permis mais on sait jamais
-		__colonnes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+		colonnes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
 		#On utilise une variable str pour créer la texte qu'on affichera aprés
-		affiche = self.getJoueur(0).getNom() + " a tiré en " + __colonnes[int(coor[0])] + str(coor[1]) + " : " + resultat[cible]
+		affiche = self.getJoueur(0).getNom() + " a tiré en " + colonnes[int(coor[0])] + str(coor[1]) + " : " + resultat[cible]
 		if self.getJoueur(1).getBateau(cible-1).estCoulle():
 			affiche += ", coulee."
 
 			# On verifie si le joueur adverse a encore des bateaux non coulé sinon le joueur gagne
 			gagne = True
-			for i in range(self.getJoueur(1).getFlotte()):
+			for i in self.getJoueur(1).getFlotte():
 				if not i.estCoulle():
 					gagne = False
 			if gagne:
-				self.getJoueur(0).estVainceur = True
+				self.getJoueur(0).gagne()
 		else:
 			affiche += "."
 
 		# On échange la place des joueurs
 		_tampon = self.getJoueur(0)
-		self.setJoueurs(0, self.getJoueur(1))
-		self.setJoueurs(1, _tampon)
+		self.setJoueur(0, self.getJoueur(1))
+		self.setJoueur(1, _tampon)
 
 		# On réalise l'affichage du coup joué
-		affiche += "\n \n Au tour de "+ self.__joueurs[0].nom
+		affiche += "\n \n Au tour de "+ self.getJoueur(0).getNom()
 		os.system("cls")
 		print(affiche)
 		# On marque une pause pour pas qu'un joueur puisse voire le plateau de l'autre
@@ -149,7 +151,7 @@ class BatailleNavale:
 			print(' ' + str(i), end='    ')
 			self.getJoueur(0).getPlateau().afficheLigne(i)
 			print('     |      ', end='')
-			self.getJoueur(0).getPlateau().afficheLigne(i, cache=True)
+			self.getJoueur(1).getPlateau().afficheLigne(i, cache=True)
 			print(str(i) + '\n')
 
 		# affiche nom des joueurs centré (max 35 caractéres)
@@ -163,15 +165,7 @@ class BatailleNavale:
 			print(' ', end='')
 		print(self.getJoueur(1).getNom(), '\n')
 
-	def demanderNom(self, numJoueur='1', taille_max=30):
-		""" demande son nom au joueur """
-		nom = input("Entrez le nom du joueur " + numJoueur + " : ")
-		if len(nom) <= taille_max:
-			os.system("cls")
-			return nom
-		else:
-			print("veuillez entrer un nom de moins de " + str(taille_max) + " carracteres")
-			return self.demanderNom(numJoueur, taille_max)
+
 
 if __name__ == '__main__':
 

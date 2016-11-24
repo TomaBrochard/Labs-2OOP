@@ -1,3 +1,5 @@
+
+import os
 import random
 
 class Bateau:
@@ -14,6 +16,7 @@ class Bateau:
 		self.__estCoulle = False
 		self.__coords = [0,0]
 		self.__orientation = 0    # 0 = bateau verticale, 1 = bateau horizontale
+
 		self.placerRandom()
 
 	# GETTERS
@@ -30,31 +33,32 @@ class Bateau:
 		return self.__orientation
 	def getTaille(self):
 		return self.__taille
-	def estPlace(self):
+	def estplace(self):
 		return self.__place
-	def estCoule(self):
+	def getNom(self):
+		return self.__nom
+	def estCoulle(self):
 		return self.__estCoulle
+
 
 	# SETTERS
 	def setOrientation(self, new):
 		if new == 0 or new == 1:
 			self.__orientation = new
-	def setCoords(self, new):
-		self.__coords = new
 
 	def placer(self, coords, orientation):
-		""" Place le bateau sur le plateau (setter cumulé de coords, orientation et place"""
+		""" Place le bateau sur le plateau (setter cumulé de coords, orientation et place) """
 
 		# si la place est libre on place le bateau,sinon on retourne False
 		if self.getPlateau().estLibre(coords, orientation, self.getTaille()):
-			self.setCoords(coords)
-			self.setOrientation(orientation)
+			self.__coords = coords
+			self.__orientation = orientation
 			for i in range (self.getTaille()):
 				self.getPlateau().setCase(coords[0] + i *  orientation,
-									  	  coords[1] + i * (orientation+1)%2,
+									  	  coords[1] + i * ((orientation+1)%2),
 									  	  self.getLettre())
 			self.__place = True
-		return self.estPlace()
+		return self.estplace()
 
 	def decrementerVie(self):
 		""" décrémente une vie au bateau, s'il n'en a lus, il est coulé. Est un setter pour vie"""
@@ -64,7 +68,6 @@ class Bateau:
 		if self.__vie == 0:
 			self.couler()
 
-
 	def couler(self):
 		""" coulle le bateau, le remplace par des "c" sur le plateau. est le setter de estCoulle"""
 		self.__estCoulle = True
@@ -72,15 +75,32 @@ class Bateau:
 		# remplace le bateau par des 'c' sur toute sa taille
 		for i in range(self.getTaille()):
 			self.getPlateau().setCase(self.getCoord(0) + i *  self.getOrientation(),
-								 	  self.getCoord(1) + i * (self.getOrientation()+1)%2,
+								 	  self.getCoord(1) + i * ((self.getOrientation()+1)%2),
 									  'c')
+
+	def demanderCoords(self):
+		""" affiche le plateau du joueur pour qu'il visualise ses bateaux et lui demande leur coordonnées"""
+		legal = False
+
+		# On affiche le plateau pour que le joueur sache ou il place son bateau
+		os.system("cls")
+		print("      A  B  C  D  E  F  G  H  I  J       \n")
+		self.getPlateau().affiche()
+		print()
+
+		while not legal:
+			# On lui demande ou il veux le placer
+			coordsOri = self.__getUsableCoords()
+			if self.placer(coordsOri[0], coordsOri[1]):
+				legal = True
+				self.__confirmePlacement()
+			else:
+				print("Placement du " + self.getNom() + " incorrecte")
 
 	def placerRandom(self):
 		""" position aleatoire du Bateau puis test si il y a superposition. Si c'est bon: placer
 		 sinon deplacer le bateau en parallelle. Si toujour pas, boucler """
 		orientation = random.randrange(0, 2)  # 0 = bateau verticale, 1 = bateau horizontale
-
-		# On créé les coordonées selon la taille et l'orientation du Bateau pour que le Bateau ne sorte pas du Tableau
 		coords = [random.randrange(0, self.getPlateau().getLenLigne()   - self.getTaille() *  orientation),
 				  random.randrange(0, self.getPlateau().getLenColonne() - self.getTaille() * (orientation+1)%2)]
 
@@ -88,35 +108,44 @@ class Bateau:
 		if not self.placer(coords, orientation):
 			for i in range(1, 10):
 				if self.placer([(coords[0] + i *  orientation       ) % 10,
-								(coords[1] + i * (orientation + 1)%2) % 10],
+								(coords[1] + i * ((orientation + 1)%2)) % 10],
 							     orientation):
 					break
 
 		# si a ce stade le bateau n'est toujours pas placé, c'est que toute les places
 		# parralelle à lui meme sont prises, donc on relance le placement random.
-		if not self.estPlace():
+		if not self.estplace():
 			self.placerRandom()
 
 
 
+class Porte_avions(Bateau):
+	""" Classe héritant de Bateau avec une taille de 5 et est noté 'P' """
 
-
-class Porte_avions:
 	def __init__(self, plateau):
+		""" Constructeur """
 		pass
 
-class Croiseur:
+class Croiseur(Bateau):
+
 	def __init__(self, plateau):
+		""" Constructeur """
 		pass
 
-class Contre_torpilleur:
+class Contre_torpilleur(Bateau):
+
 	def __init__(self, plateau):
+		""" Constructeur """
 		pass
 
-class Sous_marin:
+class Sous_marin(Bateau):
+
 	def __init__(self, plateau):
+		""" Constructeur """
 		pass
 
-class Torpilleur:
+class Torpilleur(Bateau):
+
 	def __init__(self, plateau):
+		""" Constructeur """
 		pass

@@ -1,12 +1,13 @@
 
 import os
 import random
+from Plateau import *
 
 class Bateau:
 	""" Bateau de Bataille Navale comportant un plateau, une lettre d'affichage, ses coordonées,
 	uneorientation, une taille , des vies et 2 bool pour savoir si il est placé et coulé"""
 
-	def __init__(self, plateau, lettre, taille, nom="bateau", aleatoire=False):
+	def __init__(self, plateau, lettre, taille, nom="bateau", aleatoire=False, vitesse=1):
 		""" Constructeur """
 		self.__plateau = plateau
 		self.__lettre = lettre
@@ -17,6 +18,7 @@ class Bateau:
 		self.__coords = [0,0]
 		self.__orientation = 0    # 0 = bateau verticale, 1 = bateau horizontale
 		self.__nom = nom
+		self.__vitesse = vitesse
 
 		if aleatoire:
 			self.placerRandom()
@@ -45,6 +47,8 @@ class Bateau:
 		return self.__nom
 	def estCoulle(self):
 		return self.__estCoulle
+	def getVitesse(self):
+		return self.__vitesse
 
 
 	# SETTERS
@@ -91,6 +95,7 @@ class Bateau:
 			self.getPlateau().setCase(self.getCoord(0) + i *  self.getOrientation(),
 								 	  self.getCoord(1) + i * ((self.getOrientation()+1)%2),
 									  'c')
+
 
 	def demanderCoords(self):
 		""" affiche le plateau du joueur pour qu'il visualise ses bateaux et lui demande leur coordonnées"""
@@ -204,6 +209,19 @@ class Bateau:
 		if not self.estplace():
 			self.placerRandom()
 
+	def deplacer(self, sense=1):
+		""" fait avancer le Bateau selon son orientation (en haut pour verticale ou à gauche pour horizontal"""
+		coordsDestination = [self.getCoord(0) + sense * self.getVitesse() *   self.getOrientation(),
+							 self.getCoord(1) + sense * self.getVitesse() * ((self.getOrientation()+1)%2)]
+		autreBateau = Plateau.bateau.copy()
+		autreBateau.remove(self.getLettre())
+		if self.getPlateau().estLibre(coordsDestination, self.getOrientation(), self.getTaille(), autreBateau):
+			self.retirer()
+			self.placer(coordsDestination, self.getOrientation())
+			return True
+		else:
+			print("Impossible " + ("d'avancer" if sense>0 else "de reculer"))
+			return False
 
 
 class Porte_avions(Bateau):
@@ -230,6 +248,22 @@ class Sous_marin(Bateau):
 	def __init__(self, plateau, aleatoire=False):
 		""" Constructeur """
 		Bateau.__init__(self,plateau, 'S', 3, "sous-marin", aleatoire)
+		self.__plonge = False
+
+	def estPlonge(self):
+		return self.__plonge
+
+	def plonger(self):
+		""" Fait plonger le sous-marin, il réaparaitra apres le tour suivant. """
+		if not self.__plonge:
+			self.retirer()
+			self.__plonge = True
+
+	def remonter(self):
+		""" le sous-marin remonte """
+		if self.__plonge:
+			self.placer(self.getCoords(), self.getOrientation())
+			self.__plonge = False
 
 class Torpilleur(Bateau):
 

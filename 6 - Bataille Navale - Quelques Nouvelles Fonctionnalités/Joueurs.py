@@ -9,10 +9,10 @@ class Joueurs:
 		""" Constructeur """
 		self.__nom = self.demanderNom()
 		self.__plateau = Plateau()
-		random = self.demanderPlacementBateau()
-		self.__flotte = [Porte_avions(self.__plateau, random), Croiseur(self.__plateau, random),
-					   Contre_torpilleur(self.__plateau, random), Sous_marin(self.__plateau, random),
-					   Torpilleur(self.__plateau, random)]
+		aleatoire = self.demanderPlacementBateau()
+		self.__flotte = [Porte_avions(self.__plateau, aleatoire), Croiseur(self.__plateau, aleatoire),
+						 Contre_torpilleur(self.__plateau, aleatoire), Sous_marin(self.__plateau, aleatoire),
+						 Torpilleur(self.__plateau, aleatoire)]
 		self.__vainceur = False
 
 	# GETTERS
@@ -39,11 +39,15 @@ class Joueurs:
 		os.system("cls")
 		nom = input("Entrez le nom du joueur " + str(cls.nbJoueurs) + " : ")
 		if len(nom) <= taille_max:
-			os.system("cls")
 			return nom
 		else:
 			print("veuillez entrer un nom de moins de " + str(taille_max) + " carracteres")
 			return cls.demanderNom(taille_max)
+
+	@classmethod
+	def RAZNbJoueurs(cls):
+		""" Remet le nombre de joueurs à 0 au cas au le joueur souhaite rejouer """
+		cls.nbJoueurs = 0
 
 	def demanderPlacementBateau(self):
 		""" Demande si le joueur souhaite placer ses Bateau aléatoirement (plus rapide) """
@@ -64,6 +68,11 @@ class Joueurs:
 
 		# l'input utilisateur est limité à deux caractéres
 		if len(rawCoords) == 2:
+
+			# Si lejoueur entre 42, il gagne automatiquement, (pour tester l'écran de fin)
+			if rawCoords == "42":
+				self.gagne()
+				return 42
 			for i in range(2):
 
 				# on récupére la valeur ascii de chaque caractére avec ord()
@@ -87,3 +96,38 @@ class Joueurs:
 		# si on arrive à c stade, le programme n'est pas passé dans le return donc la saisie est incorect
 		print("Incorect, merci de saisire une ligne [0-9] et une colonne [A-J] ")
 		return self.demanderCoordonnees()
+
+	def deplacerBateau(self, sense=1):
+		""" demande au joueur quel bateau il veux déplacer et le fait """
+		print()
+		rawBateau = input(" 1: Porte-avion\n"
+						  " 2: Croiseur\n"
+						  " 3: Contre-torpilleur\n"
+						  " 4: Sous-marin\n"
+						  " 5: Torpilleur\n"
+						  "Quel bateau voulez vous deplacer ? : ").upper()
+		if rawBateau in ["1", "PORTE-AVION", "2", "CROISEUR", "3", "CONTRE-TORPILLEUR",
+						 "4", "SOUS-MARIN", "5", "TORPILLEUR"]:
+			resultat = False
+			if rawBateau in ["1", "PORTE-AVION"]:
+				resultat = self.getBateau(0).deplacer(sense)
+			elif rawBateau in ["2", "CROISEUR"]:
+				resultat = self.getBateau(1).deplacer(sense)
+			elif rawBateau in ["3", "CONTRE-TORPILLEUR"]:
+				resultat = self.getBateau(2).deplacer(sense)
+			elif rawBateau in ["4", "SOUS-MARIN"]:
+				resultat = self.getBateau(3).deplacer(sense)
+			elif rawBateau in ["5", "TORPILLEUR"]:
+				resultat = self.getBateau(4).deplacer(sense)
+			if resultat:
+				return self.getNom() + " a déplacé un bateau."
+			else:
+				return self.deplacerBateau()
+		else:
+			print("Saisie incorrecte, veuillez saisire 1, 2, 3, 4 ou 5.")
+			return self.deplacerBateau(sense)
+
+	def plongerSousMarin(self):
+		""" Fait plonger le sous-marin du joueur """
+		self.getBateau(3).plonger()
+		return self.getNom() + " a fait plonger son sous-marin."

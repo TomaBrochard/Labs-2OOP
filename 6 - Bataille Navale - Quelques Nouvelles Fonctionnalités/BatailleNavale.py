@@ -24,15 +24,14 @@ class BatailleNavale:
 	def commencerJeu(self):
 		""" Routine principale du jeu """
 
-		os.system("color  F0") # met la console en noir sur fond blanc
+		#os.system("color  F0") # met la console en noir sur fond blanc
 		# On instancie les joueurs ici pour pouvoir en changer en cas de nouvelle partie
-		self.setJoueurs([Joueurs(),
-						 Joueurs()])
+		self.setJoueurs([Joueurs(), Joueurs()])
 
 		# tant qu'il n'y a pas de vainceurs, on joue
 		while not self.getJoueur(0).estVainceur() and not self.getJoueur(1).estVainceur():
 			self.afficheJeu()
-			self.tirer()
+			self.changerTour(self.choixAction())
 
 		# normalement à ce stade, d'est joueurs[1] qui à gagné car il vient de tirer et on a changé de tour
 		self.rejouer(self.getJoueur(1))
@@ -66,10 +65,43 @@ class BatailleNavale:
 		rejouer = input("Voulez vous rejouer ? (O/n)").upper()
 		if rejouer in ["", "O", "Y", "OUI", "YES", "OK"]:
 			os.system("cls")
+			Joueurs.RAZNbJoueurs()
 			self.commencerJeu()
 		else:
 			if rejouer in ["N", "NON", "NO"]:
 				exit() # termine le programme et ferme la console
+
+	def choixAction(self):
+		""" demande au joueur ce qu'il veux faire (tirer, deplacer un bateau, faire plonger le sous-marin) """
+		ssMarinPlonge = self.getJoueur(0).getBateau(3).estPlonge()
+		rawAction = input(" 1: Tirer\n"+
+						  " 2: Avancer un bateau\n"+
+						  " 3: Reculer un bateau\n"+
+						  (" 4: Plonger le sous-marin\n" if not ssMarinPlonge else "")+
+						  "Que voulez-vous faire ? : ").upper()
+		choix = ["1", "T", "TIRE", "TIRER", "2", "A", "AVANCE", "AVANCER", "3", "R", "RECULE", "RECULER"]
+		if not ssMarinPlonge:
+			choix.append("4")
+			choix.append("P")
+			choix.append("PLONGE")
+			choix.append("PLONGER")
+
+		if rawAction in ["1", "T", "TIRE", "TIRER"]:
+			resultat = self.tirer()
+		elif rawAction in ["2", "A", "AVANCE", "AVANCER"]:
+			resultat = self.getJoueur(0).deplacerBateau(-1)
+		elif rawAction in ["3", "R", "RECULE", "RECULER"]:
+			resultat = self.getJoueur(0).deplacerBateau()
+		elif rawAction in ["4", "P", "PLONGE", "PLONGER"] and not ssMarinPlonge:
+			resultat = self.getJoueur(0).plongerSousMarin()
+		else:
+			print("Saisie incorrecte, veuillez saisire 1, 2, 3 ou 4.")
+			return self.choixAction()
+
+		if ssMarinPlonge:
+			self.getJoueur(0).getBateau(3).remonter()
+		return resultat
+
 
 	def tirer(self):
 		""" demande au joueur où il veux tirer et évalue son tire """
@@ -89,44 +121,42 @@ class BatailleNavale:
 		# Si le joueur a deja tiré ici, on lui dit et il re-tire
 		if  case > 5:
 			print("cible deja touchee")
-			self.tirer()
+			return self.tirer()
 		else:
+			colonnes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+			resultat = ["Dans l'eau",  # la case ciblé était '.'
+						'Porte-avion touche',  # la case ciblé était 'P'
+						'Croiseur touche',  # la case ciblé était 'C'
+						'Contre-torpilleur touche',  # la case ciblé était 'U'
+						'Sous-marin touche',  # la case ciblé était 'S'
+						'Torpilleur touche',  # la case ciblé était 'T'
+						None, None,	None]  # la case ciblé était 'w', 't' ou 'c' ce qui n'est pas permis mais on sait jamais
 			if case == 0:                                                   # dans l'eau
 				self.getJoueur(1).getPlateau().setCase(coords[0], coords[1], 'w')
-				self.changerTour(coords, case)
+
 			else:                                                           # touché
 				self.getJoueur(1).getPlateau().setCase(coords[0], coords[1], 't')
 
 				# on décrémente une vie au bateau ce qui entraine de le couler s'il n'en a plus
 				self.getJoueur(1).getBateau(case - 1).decrementerVie()
 
-				self.changerTour(coords, case)
+			affiche = self.getJoueur(0).getNom() + " a tiré en " + colonnes[int(coords[1])] + str(coords[0]) + " : " + resultat[case]
+			if self.getJoueur(1).getBateau(case-1).estCoulle():
+				affiche += ", coulee."
 
-	def changerTour(self, coor, cible):
-		""" affiche le coup joué et marque une pause pour changer de joueur """
-		resultat = ["Dans l'eau",						# la case ciblé était '.'
-					'Porte-avion touche',				# la case ciblé était 'P'
-					'Croiseur touche',					# la case ciblé était 'C'
-					'Contre-torpilleur touche',			# la case ciblé était 'U'
-					'Sous-marin touche',				# la case ciblé était 'S'
-					'Torpilleur touche',				# la case ciblé était 'T'
-					None, None, None]					# la case ciblé était 'w', 't' ou 'c' ce qui n'est pas permis mais on sait jamais
-		colonnes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+				# On verifie si le joueur adverse a encore des bateaux non coulé sinon le joueur gagne
+				gagne = True
+				for i in self.getJoueur(1).getFlotte():
+					if not i.estCoulle():
+						gagne = False
+				if gagne:
+					self.getJoueur(0).gagne()
+			else:
+				affiche += "."
+			return affiche
 
-		#On utilise une variable str pour créer la texte qu'on affichera aprés
-		affiche = self.getJoueur(0).getNom() + " a tiré en " + colonnes[int(coor[0])] + str(coor[1]) + " : " + resultat[cible]
-		if self.getJoueur(1).getBateau(cible-1).estCoulle():
-			affiche += ", coulee."
-
-			# On verifie si le joueur adverse a encore des bateaux non coulé sinon le joueur gagne
-			gagne = True
-			for i in self.getJoueur(1).getFlotte():
-				if not i.estCoulle():
-					gagne = False
-			if gagne:
-				self.getJoueur(0).gagne()
-		else:
-			affiche += "."
+	def changerTour(self, coupPrecedent):
+		""" Marque une pause pour changer de joueur """
 
 		# On échange la place des joueurs
 		_tampon = self.getJoueur(0)
@@ -134,9 +164,9 @@ class BatailleNavale:
 		self.setJoueur(1, _tampon)
 
 		# On réalise l'affichage du coup joué
-		affiche += "\n \n Au tour de "+ self.getJoueur(0).getNom()
 		os.system("cls")
-		print(affiche)
+		print(coupPrecedent + "\n \n Au tour de "+ self.getJoueur(0).getNom())
+
 		# On marque une pause pour pas qu'un joueur puisse voire le plateau de l'autre
 		input()
 
